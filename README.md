@@ -1,5 +1,6 @@
-# README of UD
+#  A Universal Discriminator for Zero-Shot Generalization 
 
+## Getting Started
 First, produce the data for our training process:
 
 ```python
