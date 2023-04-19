@@ -60,3 +60,6 @@ python eval.py \
 ```
 
 Noted that you should prepare the T5 checkpoints and T0's training and evaluation task data mentioned in paper to run through the above code.
+
+## TODO
+1. Release data in our proposed discriminative format
