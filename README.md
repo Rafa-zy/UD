@@ -64,3 +64,16 @@ Noted that you should prepare the T5 checkpoints and T0's training and evaluatio
 
 ## TODO
 1. Release data in our proposed discriminative format
+
+
+## Citation
+
+Please cite us if it is useful in your work:
+
+@article{xu2022universal,
+  title={A Universal Discriminator for Zero-Shot Generalization},
+  author={Xu, Haike and Lin, Zongyu and Zhou, Jing and Zheng, Yanan and Yang, Zhilin},
+  journal={arXiv preprint arXiv:2211.08099},
+  year={2022}
+}
+
