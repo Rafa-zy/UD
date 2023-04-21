@@ -25,7 +25,6 @@ from transformers.models.t5.modeling_t5 import T5Stack
 
 from transformers import DebertaV2Tokenizer
 from transformers import DebertaV2PreTrainedModel
-# from transformers.models.deberta_v2.modeling_deberta_v2_haike import ContextPooler, StableDropout, DebertaV2Model
 from transformers.models.deberta_v2.modeling_deberta_v2 import ContextPooler, StableDropout, DebertaV2Model
 
 
@@ -140,28 +139,11 @@ def cl_forward(cls,
     num_sent=1
 
     mlm_outputs = None
-    # xhk: now only one sentence each data
     # Flatten input for encoding
     input_ids = input_ids.view((-1, input_ids.size(-1))) # (bs * num_sent, len)
     attention_mask = attention_mask.view((-1, attention_mask.size(-1))) # (bs * num_sent len)
     if token_type_ids is not None:
         token_type_ids = token_type_ids.view((-1, token_type_ids.size(-1))) # (bs * num_sent, len)
-
-    """print("batch_size", batch_size)
-    print(input_ids[0])
-    print("end of input 0")
-    print(input_ids[1])
-    print("end of input 1")
-    print(labels)"""
-
-    """print("input_ids", input_ids)
-    print("attention_mask",attention_mask)
-    print("token_type_ids",token_type_ids)
-    print("position_ids",position_ids)
-    print("head_mask",head_mask)
-    print("inputs_embeds",inputs_embeds)"""
-
-    #print("inputids shape", input_ids.shape)
 
     # Get raw embeddings
     outputs = encoder(
@@ -192,25 +174,13 @@ def cl_forward(cls,
             return_dict=True,
         )
 
-    # Pooling
-    #xhk: here cls only takes the embeddings of the [CLS] token in outputs
     pooler_output = cls.pooler(attention_mask, outputs)
-    #pooler_output = pooler_output.view((batch_size, num_sent, pooler_output.size(-1))) # (bs, num_sent, hidden)
     pooler_output = pooler_output.view((batch_size, pooler_output.size(-1))) # (bs, num_sent, hidden)
-    
-    #xhk: pooler_output above removes the final pooler in original bert and decide whether to add it here
-    # If using "cls", we add an extra MLP layer
-    # (same as BERT's original implementation) over the representation.
+
     if cls.pooler_type == "cls":
         pooler_output = cls.mlp(pooler_output)
 
-    #logits=cls.classifier(pooler_output)
-    
-    # xhk: don't use pooler
     logits=cls.classifier(outputs[0])
-    
-
-    #print("pooler shape", pooler_output.shape)
 
     assert(dist.is_initialized()==False)
 
@@ -222,9 +192,6 @@ def cl_forward(cls,
             tf_labels[i][0]=1
         else:
             tf_labels[i][1]=1
-
-    #print("z=", z)
-    #print("tf_labels=", tf_labels)
 
     loss_fct = nn.CrossEntropyLoss()
     loss = loss_fct(z, tf_labels)
@@ -457,9 +424,6 @@ class T5ForSequenceClassification(T5PreTrainedModel):
         #self.model_args = model_args
 
         pooler=self.model_args.pooler_type
-        #print("pooler:",pooler)
-        print("config", config, config.hidden_size,config.num_labels)
-
         self.num_labels = config.num_labels
 
         self.config = config
@@ -479,10 +443,6 @@ class T5ForSequenceClassification(T5PreTrainedModel):
         self.classifier = nn.Linear(config.hidden_size, config.num_labels)
 
         self.init_weights()
-
-        #print("---------init-------")
-        #print("config", config, config.hidden_size,config.num_labels)
-        #print("problem type", config.problem_type)
 
         # Model parallel
         self.model_parallel = False
@@ -512,13 +472,6 @@ class T5ForSequenceClassification(T5PreTrainedModel):
         input_ids = input_ids.view((-1, input_ids.size(-1))) # (bs * num_sent, len)
         attention_mask = attention_mask.view((-1, attention_mask.size(-1))) # (bs * num_sent len)
 
-        #print("inputs",input_ids)
-        #print("attention",attention_mask)
-        #print("head_mask",head_mask)
-        #print("inputs_embed",inputs_embeds)
-        #print("output_hidden_states",output_hidden_states)
-        #output_hidden_states=True
-
         outputs = self.encoder(
             input_ids=input_ids,
             attention_mask=attention_mask,
@@ -529,57 +482,20 @@ class T5ForSequenceClassification(T5PreTrainedModel):
             return_dict=return_dict,
         )
 
-        #print("outputs",outputs)
-
         weights, pooled_output = self.pooler(outputs[0], mask=attention_mask)
         pooled_output = self.dropout(pooled_output)
         logits = self.classifier(pooled_output)
 
-        #print("logits",logits)
-        #print("labels",labels)
 
         loss = None
         if labels is not None:
-            """
-            if self.config.problem_type is None:
-                if self.num_labels == 1:
-                    self.config.problem_type = "regression"
-                elif self.num_labels > 1 and (labels.dtype == torch.long or labels.dtype == torch.int):
-                    self.config.problem_type = "single_label_classification"
-                else:
-                    self.config.problem_type = "multi_label_classification"
-            """
-            
-            #print("in model:", self.num_labels)
-
-            #print("logits", logits)
-            #print("labels", labels)
-
-            #print("labels", labels.view(-1, self.num_labels))
-            #print("logits", logits.view(-1, self.num_labels))
-
-
-            """if self.config.problem_type == "regression":
-                loss_fct = MSELoss()
-                loss = loss_fct(logits.view(-1, self.num_labels), labels)
-            elif self.config.problem_type == "single_label_classification":
-                loss_fct = CrossEntropyLoss()
-                loss = loss_fct(logits.view(-1, self.num_labels), labels.view(-1))
-            elif self.config.problem_type == "multi_label_classification":
-                loss_fct = BCEWithLogitsLoss()
-                loss = loss_fct(logits, labels)"""
             
             if self.model_args.weighted:
                 loss_fct = CrossEntropyLoss(reduction='none')
                 weights=labels[:,-1]
                 labels=labels[:,:-1]
                 loss_tensor=loss_fct(logits.view(-1, self.num_labels), labels.view(-1, self.num_labels))
-                #print("weight",weights)
-                #print("labels",labels)
-                #print("loss_tenros",loss_tensor)
                 loss= torch.dot(loss_tensor,weights)
-                #print("loss",loss)
-                #exit()
             else:
                 loss_fct = CrossEntropyLoss() # 
                 loss = loss_fct(logits.view(-1, self.num_labels), labels.view(-1, self.num_labels))
@@ -668,57 +584,15 @@ class DebertaV3ForSequenceClassification(DebertaV2PreTrainedModel):
 
         loss = None
         if labels is not None:
-            """if self.config.problem_type is None:
-                if self.num_labels == 1:
-                    # regression task
-                    loss_fn = nn.MSELoss()
-                    logits = logits.view(-1).to(labels.dtype)
-                    loss = loss_fn(logits, labels.view(-1))
-                elif labels.dim() == 1 or labels.size(-1) == 1:
-                    label_index = (labels >= 0).nonzero()
-                    labels = labels.long()
-                    if label_index.size(0) > 0:
-                        labeled_logits = torch.gather(
-                            logits, 0, label_index.expand(label_index.size(0), logits.size(1))
-                        )
-                        labels = torch.gather(labels, 0, label_index.view(-1))
-                        loss_fct = CrossEntropyLoss()
-                        loss = loss_fct(labeled_logits.view(-1, self.num_labels).float(), labels.view(-1))
-                    else:
-                        loss = torch.tensor(0).to(logits)
-                else:
-                    log_softmax = nn.LogSoftmax(-1)
-                    loss = -((log_softmax(logits) * labels).sum(-1)).mean()
-            elif self.config.problem_type == "regression":
-                loss_fct = MSELoss()
-                if self.num_labels == 1:
-                    loss = loss_fct(logits.squeeze(), labels.squeeze())
-                else:
-                    loss = loss_fct(logits, labels)
-            elif self.config.problem_type == "single_label_classification":
-                loss_fct = CrossEntropyLoss()
-                loss = loss_fct(logits.view(-1, self.num_labels), labels.view(-1))
-            elif self.config.problem_type == "multi_label_classification":
-                loss_fct = BCEWithLogitsLoss()
-                loss = loss_fct(logits, labels)"""
             if self.model_args.weighted:
                 loss_fct = CrossEntropyLoss(reduction='none')
                 weights=labels[:,-1]
                 labels=labels[:,:-1]
                 loss_tensor=loss_fct(logits.view(-1, self.num_labels), labels.view(-1, self.num_labels))
-                #print("weight",weights)
-                #print("labels",labels)
-                #print("loss_tenros",loss_tensor)
                 loss= torch.dot(loss_tensor,weights)
-                #print("loss",loss)
-                #exit()
             else:
                 loss_fct = CrossEntropyLoss()
                 loss = loss_fct(logits.view(-1, self.num_labels), labels.view(-1, self.num_labels))
-
-            #print("logits", logits)
-            #print("labels", labels)
-            #print("loss", loss)
 
         if not return_dict:
             output = (logits,) + outputs[1:]

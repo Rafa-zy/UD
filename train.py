@@ -11,7 +11,6 @@ import random
 import numpy as np
 
 os.environ["CUDA_VISIBLE_DEVICES"]="0,1,2,3,4,5,6,7"
-#os.environ["CUDA_VISIBLE_DEVICES"]="4,5,6,7"
 
 os.environ["WANDB_DISABLED"] = "true"
 
@@ -48,8 +47,6 @@ from transformers.tokenization_utils_base import BatchEncoding, PaddingStrategy,
 from transformers.trainer_utils import is_main_process
 from transformers.data.data_collator import DataCollatorForLanguageModeling
 from transformers.file_utils import cached_property, torch_required, is_torch_available, is_torch_tpu_available
-from models import RobertaForCL, BertForCL
-from trainers import CLTrainer
 
 from models import T5ForSequenceClassification
 from models import DebertaV3ForSequenceClassification
@@ -105,7 +102,6 @@ class ModelArguments:
         },
     )
 
-    # SimCSE's arguments
     temp: float = field(
         default=0.05,
         metadata={
@@ -195,7 +191,6 @@ class DataTrainingArguments:
         metadata={"help": "The number of processes to use for the preprocessing."},
     )
 
-    # SimCSE's arguments
     train_file: Optional[str] = field(
         default=None, 
         metadata={"help": "The training data file (.txt or .csv)."}
@@ -355,19 +350,8 @@ def main():
     if data_args.train_file is not None:
         data_files["train"] = data_args.train_file
     extension = data_args.train_file.split(".")[-1]
-    if False:
-        if extension == "txt":
-            extension = "text"
-        if extension == "csv":
-            #datasets = load_dataset(extension, data_files=data_files, cache_dir="./data/", delimiter="\t" if "tsv" in data_args.train_file else ",")
-            datasets = load_dataset(extension, data_files=data_files, delimiter="\t" if "tsv" in data_args.train_file else ",")
-        else:
-            #print("./data/"+data_files["train"])
-            #print(os.path.exists("./data/"+data_files["train"]))
-            #datasets = load_dataset(extension, data_files=data_files, cache_dir="./data/")
-            datasets = load_dataset(extension, data_files=data_files)
-    else:
-        datasets=load_dataset(extension,data_files=data_files,cache_dir="/nvme/cache")
+
+    datasets=load_dataset(extension,data_files=data_files)
 
     print("start loading dataset")
 
@@ -407,14 +391,9 @@ def main():
 
     if 't5' in model_args.model_name_or_path:
         tokenizer_kwargs["use_fast"]=False
-        #tokenizer_config=get_tokenizer_config(model_args.model_name_or_path, **kwargs)
         tokenizer = T5Tokenizer.from_pretrained(model_args.model_name_or_path, **tokenizer_kwargs)
-        #tokenizer = AutoTokenizer.from_pretrained(model_args.model_name_or_path, **tokenizer_kwargs)
-        #tokenizer = AutoTokenizer.from_pretrained("google/t5-large-lm-adapt")
     if 'deberta' in model_args.model_name_or_path:
         tokenizer_kwargs["use_fast"]=False
-        #tokenizer = DebertaTokenizer.from_pretrained(model_args.model_name_or_path, **tokenizer_kwargs)
-        #tokenizer = DebertaTokenizer(model_args.model_name_or_path, **tokenizer_kwargs)
         tokenizer = DebertaV2Tokenizer.from_pretrained("microsoft/deberta-v3-large", **tokenizer_kwargs)
 
     if model_args.tokenizer_name:
@@ -480,13 +459,6 @@ def main():
         logger.info("Training new model from scratch")
         model = AutoModelForMaskedLM.from_config(config)
 
-    #print("prefix", model.base_model_prefix)
-    #print("getattr",getattr(model, model.base_model_prefix))
-
-    #if 't5' not in model_args.model_name_or_path:
-    
-    #print("len tokenizer", len(tokenizer))
-
     #model.resize_token_embeddings(len(tokenizer))
 
     # Prepare features
@@ -504,10 +476,6 @@ def main():
         total = len(examples["sent"])
 
         sentences=examples["sent"]
-
-        #print("sent ", examples["sent"])
-        #print("label0", examples["label0"])
-        #print("label1", examples["label1"])
 
         sent_features = tokenizer(
             sentences,
@@ -532,8 +500,6 @@ def main():
                 sum=examples["label0"][idx]+examples["label1"][idx]
                 features["labels"].append([examples["label0"][idx]/sum,examples["label1"][idx]/sum])
 
-        #print("features", features)
-
         return features
 
     if training_args.do_train:
@@ -541,7 +507,7 @@ def main():
             prepare_features,
             batched=True,
             batch_size=1024,
-            num_proc=64, # zy
+            num_proc=64,
             remove_columns=column_names,
             load_from_cache_file=not data_args.overwrite_cache,
         )
@@ -559,9 +525,6 @@ def main():
 
         def __call__(self, features: List[Dict[str, Union[List[int], List[List[int]], torch.Tensor]]]) -> Dict[str, torch.Tensor]:
             special_keys = ['input_ids', 'attention_mask', 'token_type_ids', 'mlm_input_ids', 'mlm_labels']
-
-            #print(features)
-            #print("-----end of features-----")
 
             bs = len(features)
             if bs > 0:
@@ -630,8 +593,6 @@ def main():
 
     data_collator = default_data_collator if data_args.pad_to_max_length else OurDataCollatorWithPadding(tokenizer)
 
-    #xhk: do not select best checkpoint in the end
-    #print("load_best_model_at_end", training_args.load_best_model_at_end)
     training_args.load_best_model_at_end= False
 
     trainer = Trainer(
@@ -668,17 +629,6 @@ def main():
 
     # Evaluation
     results = {}
-    if training_args.do_eval:
-        logger.info("*** Evaluate ***")
-        results = trainer.evaluate(eval_senteval_transfer=True)
-
-        output_eval_file = os.path.join(training_args.output_dir, "eval_results.txt")
-        if trainer.is_world_process_zero():
-            with open(output_eval_file, "w") as writer:
-                logger.info("***** Eval results *****")
-                for key, value in sorted(results.items()):
-                    logger.info(f"  {key} = {value}")
-                    writer.write(f"{key} = {value}\n")
 
     return results
 

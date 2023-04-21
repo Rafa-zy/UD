@@ -1,11 +1,6 @@
-#  A Universal Discriminator for Zero-Shot Generalization 
+# README of UD
 
-## Getting Started
-First, produce the data for our training process:
-
-```python
-python produce_data.py
-```
+First, download and unzip our training data (T0 training data sets with minimal prompts) and evaluation data (T0 evaluating data sets) and put them in folders "train_data" and "eval_data" respectively.
 
 Then, train our main model (i.e., Universal Discriminator).
 
@@ -22,8 +17,8 @@ NUM_GPUS=8
 
 deepspeed --num_gpus=${NUM_GPUS} train.py \
     --model_name_or_path ./huggingface_models/t5-large-lm-adapt \
-    --train_file ../data_for_simcse/data725_cls_old_5choices_maxlen256_unidir.json \
-    --output_dir ./result/our_t5_large_cls_old_5choices_725 \
+    --train_file ../data_for_simcse/data_cls_5choices_maxlen256.json \
+    --output_dir ./results/ud_large \
     --num_train_epochs 10 \
     --per_device_train_batch_size 16 \
     --gradient_accumulation_steps 2 \
@@ -48,33 +43,17 @@ bash eval.sh
 Or you can run by changing some of the parameters for usage:
 
 ```python
-write_dir="../our_result/results725_t5_large_cls_old_5choices_maxlen256"
+write_dir="./evaluation_results/ud_large"
 
 mkdir -p ${write_dir}
 
 python eval.py \
-    --model_name_or_path result/our_t5_large_cls_old_5choices_725/checkpoint-3500 \
-    --write_path ${write_dir}/epoch1.csv \
+    --model_name_or_path results/ud_large/ \
+    --write_path ${write_dir}/final.csv \
     --pooler_type avg \
-    --temp 0.05 \
     "$@"
 ```
 
-Noted that you should prepare the T5 checkpoints and T0's training and evaluation task data mentioned in paper to run through the above code.
+Noted that you should prepare the T5 checkpoints and download T0's training and evaluation task data mentioned in paper to run through the above code.
 
-## TODO
-1. Release data in our proposed discriminative format
-
-
-## Citation
-
-Please cite us if it is useful in your work:
-
-```
-@article{xu2022universal,
-  title={A Universal Discriminator for Zero-Shot Generalization},
-  author={Xu, Haike and Lin, Zongyu and Zhou, Jing and Zheng, Yanan and Yang, Zhilin},
-  journal={arXiv preprint arXiv:2211.08099},
-  year={2022}
-}
-```
+Some part of our code is adapted from [SimCSE](https://github.com/princeton-nlp/SimCSE)
