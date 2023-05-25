@@ -90,11 +90,13 @@ Our released training data, eval data, and checkpoint can be found through this 
 
 You can download them through the following link:
 
-https://www.dropbox.com/s/ptnsq7nunt12zza/ud_public.zip?dl=0
+https://www.dropbox.com/s/t5c9ms2g8s1re4r/ud_data.zip?dl=0
 
 ### Model
 
-You can download model through this link: https://drive.google.com/file/d/1l-7yctAWICwifHEcxMdjpWBPl2K0qC-A/view?usp=share_link
+You can download model through this link:
+
+https://www.dropbox.com/s/2lvey1js4adq5w4/ud_ckpt.zip?dl=0
 
 ## Acknowledgement
 
