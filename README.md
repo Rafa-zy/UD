@@ -82,12 +82,36 @@ bash run_discriminator.sh
 
 Here are some prediction examples:
 
-### Released training data, eval data, and checkpoint
+## Released training data, eval data, and checkpoint
 
 Our released training data, eval data, and checkpoint can be found through this link:
 
-xhk: to do, upload ud_data_and_ckpt.zip to dropbox and put link here.
+### Dataset
+
+You can download them through the following link:
+
+https://www.dropbox.com/s/ptnsq7nunt12zza/ud_public.zip?dl=0
+
+### Model
+
+You can download model through this link: https://drive.google.com/file/d/1l-7yctAWICwifHEcxMdjpWBPl2K0qC-A/view?usp=share_link
 
 ## Acknowledgement
 
 Some part of our code is adapted from [SimCSE](https://github.com/princeton-nlp/SimCSE)
+
+## TODO LIST
+    - release XL and XXL checkpoint of our proposed Universal Discriminator
+    - Our proposed Universal Discriminator can be regarded as a strong reward model for the RLHF (Reinforcement learning from human feedback) for open source chatgpt like LLAMA (https://github.com/facebookresearch/llama), etc.
+    
+
+## Citation
+Please cite us if it is useful in your work:
+```
+@article{xu2022universal,
+  title={A Universal Discriminator for Zero-Shot Generalization},
+  author={Xu, Haike and Lin, Zongyu and Zhou, Jing and Zheng, Yanan and Yang, Zhilin},
+  journal={arXiv preprint arXiv:2211.08099},
+  year={2022}
+}
+```
