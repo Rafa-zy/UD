@@ -1,5 +1,5 @@
-NUM_GPUS=8
-
+NUM_GPUS=1
+# you can download t5-large-lm-adapt from Huggingface and move to the following path
 deepspeed --num_gpus=${NUM_GPUS} train.py \
     --model_name_or_path ./huggingface_models/t5-large-lm-adapt \
     --train_file ./train_data/data_cls_5choices_maxlen256.json \

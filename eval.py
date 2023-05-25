@@ -123,7 +123,7 @@ class ModelArguments:
         }
     )
     pooler_type: str = field(
-        default="cls",
+        default="avg",
         metadata={
             "help": "What kind of pooler to use (cls, cls_before_pooler, avg, avg_top2, avg_first_last)."
         }
@@ -272,7 +272,6 @@ write_path=model_args[0].write_path
 #test_info_file=open(write_path.split(".csv")[0]+"_info",'w')
 
 config = AutoConfig.from_pretrained(our_model_path)
-
 if "t5" in our_model_path:
     model = T5ForSequenceClassification.from_pretrained(
                     our_model_path,
@@ -292,9 +291,16 @@ elif "deberta" in our_model_path:
                 )
     tokenizer = DebertaV2Tokenizer.from_pretrained("microsoft/deberta-v3-large")
 else:
-    print("unsupported model!")
-    assert(False)
-
+    # print("unsupported model!")
+    # assert(False)
+    model = T5ForSequenceClassification.from_pretrained(
+                    our_model_path,
+                    from_tf=False,
+                    config=config,
+                    use_auth_token=None,
+                    model_args=model_args[0]
+                )
+    tokenizer = T5Tokenizer.from_pretrained(our_model_path)
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 #device = torch.device("cpu")
 model.eval()
