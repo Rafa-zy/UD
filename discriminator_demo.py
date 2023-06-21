@@ -213,4 +213,4 @@ for k in range(len(logits)):
     score[k]=exp(logits[k][1])/(exp(logits[k][0])+exp(logits[k][1]))    
     
 for i in range(len(logits)):
-    print(filled_batch[i],score[i])
+    print(filled_batch[i],round(score[i],3))

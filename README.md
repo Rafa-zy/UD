@@ -1,5 +1,11 @@
 # README of UD
 
+This repository contains the code, data sets, checkpoint, and demo for our paper [A Universal Discriminator for Zero-Shot Generalization](https://arxiv.org/pdf/2211.08099.pdf).
+
+**************************** **Updates** ****************************
+
+* 6/6: Our paper will appear in ACL 2023 (Long Paper)! Please check out our [updated paper](https://arxiv.org/pdf/2211.08099.pdf). 
+
 ## How to reproduce our results
 
 First, you need to get a universal discriminator. You can either retrain using our uploaded training data and code or directly download our released checkpoint.
@@ -79,8 +85,16 @@ You can directly use the following script to our demo.
 ```python
 bash run_discriminator.sh
 ```
-
 Here are some prediction examples:
+
+```
+I like this movie, and I don't recommend it.        0.042
+I like this movie, and I recommend it.              0.994
+It is raining, so the ground is wet.                0.842
+It is raining, so the ground is dry.                0.027
+```
+
+UD gives a score from 0 to 1 for each sentence. Higher score means the higher probability that the sentence comes from the true language distribution.
 
 ## Released training data, eval data, and checkpoint
 
